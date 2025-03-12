@@ -16,29 +16,11 @@ client.once('ready', () => {
   console.log(`✅ Discord Bot is online as ${client.user.tag}`);
 });
 
-client.on('messageCreate', async (message) => {
+client.on('messageCreate', async (message) => { // Ensure this function is async
   if (message.author.bot) return;
 
-  const args = message.content.trim().split(/\s+/);
+  const args = message.content.split(' ');
   const command = args.shift().toLowerCase();
-
-  // 🔑 Generate a new registration key
-  if (command === '!genkey') {
-    try {
-      const response = await axios.post(`${API_BASE}/generate-key`, {}, {
-        headers: { 'Authorization': API_TOKEN }
-      });
-
-      if (response.data.registrationKey) {
-        message.channel.send(`✅ **Generated Key:** \`${response.data.registrationKey}\``);
-      } else {
-        message.channel.send('❌ Error generating key.');
-      }
-    } catch (error) {
-      console.error('Error in !genkey:', error);
-      message.channel.send('❌ Error generating key.');
-    }
-  }
 
   // 🔍 Lookup user by username or ID
   if (command === '!lookup') {
@@ -64,6 +46,30 @@ client.on('messageCreate', async (message) => {
     } catch (error) {
       console.error('Error in !lookup:', error);
       message.channel.send('❌ Error looking up user.');
+    }
+  }
+
+  // 🛠️ Generate a key (Ensure `generateUniqueKey` is implemented)
+  if (command === '!genkey') {
+    if (!message.member.roles.cache.some(role => role.name === 'Admin')) {
+      return message.channel.send('❌ You do not have permission to use this command.');
+    }
+
+    const key = generateUniqueKey(); // Implement this function
+
+    try {
+      const response = await axios.post(`${API_BASE}/generate-key`, { key }, {
+        headers: { 'Authorization': API_TOKEN }
+      });
+
+      if (response.data.success) {
+        message.channel.send(`✅ Generated key: **${key}**`);
+      } else {
+        message.channel.send(`❌ ${response.data.error}`);
+      }
+    } catch (error) {
+      console.error('Error generating key:', error);
+      message.channel.send('❌ Error generating key.');
     }
   }
 
@@ -144,3 +150,7 @@ client.on('messageCreate', async (message) => {
   }
 });
 
+// Function placeholder (implement this if missing)
+function generateUniqueKey() {
+  return Math.random().toString(36).substr(2, 10).toUpperCase();
+}
